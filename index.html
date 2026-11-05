@@ -142,9 +142,18 @@ li.dim{opacity:.55}
 .jk .eq{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.45);color:#fff;font-size:40px}
 li.now .jk .eq{display:grid}
 /* マウスを乗せている間は♪を隠して画像を少し拡大 */
-#list li:hover .jk .eq{display:none}
-#list li:hover .jk img{transform:scale(1.08)}
-@media (prefers-reduced-motion:no-preference){.jk img{transition:transform .25s ease}}
+/* 画像にマウスを乗せたときだけ、中心から少し大きくする（144→180px、アイテムの縦幅を少し超える程度）。
+   広がった分だけ右側の内容をずらし、行の高さは変えない */
+@media (hover:hover) and (pointer:fine) and (min-width:641px){
+  #list .jk:hover .eq{display:none}
+  #list li:has(.jk:hover){grid-template-columns:52px 162px minmax(0,1fr) auto}
+  #list .jk:hover{width:180px;height:180px;margin:-18px 0 -18px -18px;z-index:4;box-shadow:0 12px 28px rgba(0,0,0,.4)}
+  #list .jk:hover img{object-fit:contain;background:#000}
+}
+@media (prefers-reduced-motion:no-preference){
+  #list li{transition:grid-template-columns .2s ease}
+  .jk{transition:width .2s ease,height .2s ease,margin .2s ease,box-shadow .2s ease}
+}
 .meta{min-width:0}
 .meta .t{font-weight:700;font-size:16px;line-height:1.35;overflow-wrap:anywhere}
 .meta .a{font-size:13.5px}
@@ -255,6 +264,7 @@ footer a{color:inherit}
   </div>
   <div class="nav">
     <div class="tabs" role="tablist" id="tabs"></div>
+    <button class="pill" id="bTheme" title="表示の明るさを切り替えます">表示：自動</button>
   </div>
 </div></div>
 
@@ -333,6 +343,7 @@ const CWIKI = {"ミックスナッツ":"https://ja.chordwiki.org/wiki/%E3%83%9F%
 const ROLE_CLS = {"OP":"op","ED":"ed","挿入歌":"ins","主題歌":"thm","その他":"etc"};
 const ROLE_TIP = {"OP":"オープニング曲","ED":"エンディング曲","挿入歌":"挿入歌・劇中歌","主題歌":"映画などの主題歌","その他":"その他の使われ方"};
 const roleChip=e=>{const r=ROLE[e.title];return r?`<span class="role ${ROLE_CLS[r]||"etc"}" title="${ROLE_TIP[r]||""}">${r}</span>`:""};
+const TOTAL_RANK = Object.fromEntries(DATA.total.map(e=>[e.title,e.rank]));
 const TABS = [["total","累計"],["2026","2026年"],["2025","2025年"],["2024","2024年"],["2023","2023年"],["2022","2022年"]];
 const HEAD = {total:["累計ランキング 2022–2026","各年の順位を点数化して合算"],
   "2026":["2026年（上半期）","集計期間 2025/11/24〜2026/5/24"],
@@ -359,7 +370,7 @@ const CHUNK=50;                   // watch_videos の1回あたりの上限
 let view="total";                 // 表示中のタブ
 const skipped=new Set();          // 埋め込み不可などで飛ばした動画ID
 const P={tab:null,queue:[],order:[],pos:-1,shuffle:false,offOnly:lsGet("offOnly",false),state:-1,errRun:0};
-let player=null, apiReady=false, pendingPlay=null;
+let player=null, apiReady=false, pendingPlay=null, pendingCue=null;
 
 /* ---------- list ---------- */
 function jacket(e,i){
@@ -375,6 +386,8 @@ function row(e,i){
   if(e.kind==="official") tags=`<span class="tag off">公式</span>`;
   else if(e.kind==="ref") tags=`<span class="tag ref">参考</span>`;
   else tags=e.years.map(y=>`<span class="tag yr" title="${y.k==="official"?"公式":"参考"}順位">${y.y}:${y.r}位${y.k==="official"?"":"*"}</span>`).join("")+`<span class="tag yr">${e.score}pt</span>`;
+  // 年ごとのタブでは、累計ランキングの順位も表示（100位以内）
+  if(view!=="total"&&TOTAL_RANK[e.title]) tags+=`<span class="tag yr" title="累計ランキング 2022–2026 の順位">累計:${TOTAL_RANK[e.title]}位</span>`;
   const v=vidOf(e), sk=v&&skipped.has(v);
   // 歌詞・コードのページがある曲のチップ（押すとそのページを歌詞パネルで開いて再生）
   if(UTANET[e.title]) tags+=`<button class="tag t-lyr" data-lyr="utanet" data-i="${i}" title="歌ネットに歌詞ページがあります（押すと歌詞パネルで表示）">歌詞</button>`;
@@ -466,7 +479,7 @@ function playPos(){
   const e=DATA[P.tab][P.order[P.pos]], v=vidOf(e);
   $("npl").textContent=`${TABS.find(t=>t[0]===P.tab)[1]} ${e.rank}位 ・ ${P.pos+1}/${P.order.length}${P.shuffle?" ・ シャッフル":""}`;
   $("npt").textContent=e.title; $("npa").textContent=`${e.artist} ／ ${e.work}${ROLE[e.title]?" ・ "+ROLE[e.title]:""}`;
-  setBg(e); lyrUpdate();
+  setBg(e); lyrUpdate(); lsSet("last",{tab:P.tab,title:e.title});
   document.title=`♪ ${e.title} - アニソンランキング100`;
   $("idle").hidden=true;
   if(!apiReady){pendingPlay=v;return}
@@ -533,7 +546,7 @@ if(!FILE_MODE) setInterval(seekUI,500);
 // 外部サイトのページをそのまま表示する（内容は取り込まない）。
 // 別サイトの中身はスクロールできないため、iframe を縦に長くして外側の枠をスクロールする。
 // iframe の表示幅は BASE_W に固定し、パネル幅に合わせて zoom する（位置の目安をどの幅でも使えるように）。
-var L={src:lsGet("lyrSrc","utanet"),open:false,song:null,url:"",userUntil:0,lastSet:-1,zoom:1,box:null};
+var L={src:lsGet("lyrSrc","utanet"),open:false,song:null,url:"",userUntil:0,lastSet:-1,zoom:1,box:null,ext:null};
 if(!["utanet","utachord","chordwiki","ufret"].includes(L.src)) L.src="utanet";
 L.inst=lsGet("lyrInst","Guitar"); L.instSent="";
 // 歌ネットにコード譜が無かった曲（拡張機能が知らせる）。この曲は「歌ネット コード」タブでも歌詞ページを表示する
@@ -587,7 +600,7 @@ function lyrUpdate(){
   const url=LYR_URL[effSrc()](L.song);
   $("lyrOpen").href=url;
   $("instBox").hidden=effSrc()!=="ufret"; $("lyrInst").value=L.inst;
-  if(url!==L.url){L.url=url;L.box=null;L.instSent="";$("lyrFrame").dataset.src=effSrc();$("lyrFrame").src=url;lyrZoom();setSheet(0)}
+  if(url!==L.url){L.url=url;L.box=null;L.ext=null;L.instSent="";$("lyrFrame").dataset.src=effSrc();$("lyrFrame").src=url;lyrZoom();setSheet(0)}
   calInfo();
 }
 function calInfo(){
@@ -598,6 +611,7 @@ function calInfo(){
   else if(L.box&&!(c&&(c.e!=null||c.s!=null))) msg=`歌詞の枠の位置を取得しました。動画の最初から最後にかけて、歌詞の枠全体が流れるように自動でスクロールします。${how}`;
   else if(c&&(c.e!=null||c.s!=null)) msg=`この曲は補正済みです（${[c.s!=null?fmt(c.ts):"",c.e!=null?fmt(c.te):""].filter(Boolean).join("・")}で記録）。さらにずれるときは、もう一度押してください。`;
   else if(L.src==="utachord"&&!L.box) msg=`おおよその位置で自動スクロールします。${how}歌ネットにコード譜が無い曲は、ページが表示されないことがあります（拡張機能を入れていると、自動で歌詞のみのページに切り替えます）。`;
+  else if(L.ext) msg=`拡張機能（${L.ext}）は動いていますが、歌詞・コード譜の位置がまだ取得できていません。取得できるまでは、おおよその位置で自動スクロールします。${how}`;
   else if(effSrc()==="ufret") msg=`おおよその位置で自動スクロールします。U-FRET の広告の非表示と楽器の切り替えには、拡張機能が必要です。${how}`;
   else msg=`おおよその位置で自動スクロールします（拡張機能を入れると、歌詞の枠に正確に合わせられます）。${how}`;
   // コード譜が無いので歌詞ページに切り替えているときは、その旨を先頭に付ける
@@ -646,6 +660,12 @@ addEventListener("message",ev=>{
 });
 addEventListener("message",ev=>{
   const m=ev.data;
+  if(!m||m.type!=="anisong-ext-hello"||!LYR_ORIGINS.includes(ev.origin)||ev.source!==$("lyrFrame").contentWindow) return;
+  L.ext=String(m.version||"").slice(0,10); lsSet("extSeen",true); calInfo();
+  if(ev.origin==="https://www.ufret.jp"&&L.instSent!==L.url&&L.inst!=="Guitar") sendInst();
+});
+addEventListener("message",ev=>{
+  const m=ev.data;
   if(!m||m.type!=="anisong-no-chord"||ev.origin!=="https://www.uta-net.com"||ev.source!==$("lyrFrame").contentWindow) return;
   if(!L.song||L.src!=="utachord"||!UTANET[L.song.title]) return;
   noChord.add(L.song.title); lsSet("noChord",[...noChord]);
@@ -681,10 +701,11 @@ function onYouTubeIframeAPIReady(){
   player=new YT.Player("yt",{width:"100%",height:"100%",
     playerVars:{playsinline:1,rel:0,origin:location.protocol.startsWith("http")?location.origin:undefined},
     events:{
-      onReady(){apiReady=true;applyVol();if(pendingPlay){player.loadVideoById(pendingPlay);pendingPlay=null;mark(true)}},
+      onReady(){apiReady=true;applyVol();if(pendingPlay){player.loadVideoById(pendingPlay);pendingPlay=null;mark(true)}
+        else if(pendingCue){player.cueVideoById(pendingCue);pendingCue=null}},
       onStateChange(ev){
         P.state=ev.data;
-        if(ev.data===YT.PlayerState.PLAYING) P.errRun=0;
+        if(ev.data===YT.PlayerState.PLAYING){P.errRun=0; if($("npl").textContent.startsWith("前回の曲")){playPosLabel();lsSet("last",{tab:P.tab,title:DATA[P.tab][P.order[P.pos]].title})}}
         setPlayIcon();
         if(ev.data===YT.PlayerState.ENDED) step(1);
       },
@@ -754,6 +775,32 @@ $("offOnly").addEventListener("change",ev=>{
 });
 new ResizeObserver(()=>document.documentElement.style.setProperty("--dock-h",$("dock").offsetHeight+"px")).observe($("dock"));
 render();
+// 表示テーマ（自動＝OSの設定に合わせる／ライト／ダーク）
+const THEMES=[["auto","自動"],["light","ライト"],["dark","ダーク"]];
+function applyTheme(t){
+  if(t==="light"||t==="dark") document.documentElement.dataset.theme=t; else delete document.documentElement.dataset.theme;
+  $("bTheme").textContent="表示："+(THEMES.find(x=>x[0]===t)||THEMES[0])[1];
+}
+let theme=lsGet("theme","auto"); applyTheme(theme);
+$("bTheme").addEventListener("click",()=>{const i=THEMES.findIndex(x=>x[0]===theme);theme=THEMES[(i+1)%THEMES.length][0];lsSet("theme",theme);applyTheme(theme)});
+
+// 前回再生した曲を選んだ状態で開く（▶を押すとその曲から再生）
+function restoreLast(){
+  const l=lsGet("last",null); if(FILE_MODE||!l||!DATA[l.tab]) return;
+  const i=DATA[l.tab].findIndex(e=>e.title===l.title); if(i<0) return;
+  view=l.tab; render();
+  P.tab=l.tab; P.queue=buildQueue(l.tab); if(!P.queue.includes(i)){P.tab=null;return}
+  P.order=P.queue.slice(); P.pos=P.order.indexOf(i);
+  const e=DATA[l.tab][i];
+  $("npl").textContent=`前回の曲 ・ ${TABS.find(t=>t[0]===P.tab)[1]} ${e.rank}位（▶で再生）`;
+  $("npt").textContent=e.title; $("npa").textContent=`${e.artist} ／ ${e.work}${ROLE[e.title]?" ・ "+ROLE[e.title]:""}`;
+  $("idle").hidden=true; setBg(e); lyrUpdate();
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("playing",b.dataset.k===P.tab));
+  mark(true);
+  if(apiReady) player.cueVideoById(vidOf(e)); else pendingCue=vidOf(e);
+}
+restoreLast();
+
 // ローカル起動版：開いている間はサーバーに知らせ、閉じたら終了の合図を送る（サーバーは自動で終了する）
 if(location.hostname==="localhost"){
   const ping=()=>fetch("/__ping",{cache:"no-store"}).catch(()=>{});

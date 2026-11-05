@@ -23,6 +23,46 @@
       html, body { overflow: visible !important; }`;   /* 割り込み広告でスクロールが止められないように */
     (document.head || document.documentElement).appendChild(st);
   }
+  // U-FRET：形の決まっていない広告もまとめて消す
+  //  ・コード譜と YouTube 以外の外部の埋め込み枠（iframe）を、それを包む「広告の箱」ごと非表示にする
+  //  ・画面に固定表示された重なり順の高い要素（全画面広告など）を、サイトのメニュー以外は非表示にする
+  function sweepAds() {
+    if (!isUfret) return;
+    const chord = document.getElementById("my-chord-data");
+    const hide = (el) => el.style.setProperty("display", "none", "important");
+    const shortText = (el) => (el.innerText || "").replace(/close|閉じる|広告|PR|スポンサー\S*|×|✕|\s/gi, "").length < 60;
+    document.querySelectorAll("iframe").forEach((f) => {
+      if (f.dataset.anisongChecked) return;
+      if (chord && chord.contains(f)) return;
+      const src = f.getAttribute("src") || "";
+      if (/youtube\.com|youtube-nocookie\.com|ufret\.jp/.test(src)) return;
+      f.dataset.anisongChecked = "1";
+      let box = f;
+      for (let p = f.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+        if (chord && (p.contains(chord) || chord.contains(p))) break;
+        if (p.matches("main, header, nav, footer, .l-main, .l-nav, .l-search, .l-header")) break;
+        if (!shortText(p)) break;
+        box = p;
+      }
+      hide(box);
+    });
+    document.querySelectorAll("body *").forEach((el) => {
+      if (el.dataset.anisongFixed) return;
+      const st = getComputedStyle(el);
+      if (st.position !== "fixed" || (parseInt(st.zIndex, 10) || 0) < 10000) return;
+      if (el.matches(".l-nav, .l-search, .l-header, header, nav, .remodal-wrapper, .remodal-overlay") || el.closest(".l-nav, .l-search, .l-header, .remodal-wrapper")) return;
+      // 中に外部の埋め込み枠がある、または名前が広告らしいものだけ（サイト自身のダイアログは残す）
+      const name = (el.id + " " + el.className).toString();
+      if (!el.querySelector("iframe") && !/(^|[-_\s])(ad|ads|gn|geniee|interstitial|banner|sponsor|overlay_ad)([-_\s]|$)/i.test(name)) return;
+      el.dataset.anisongFixed = "1";
+      hide(el);
+    });
+  }
+  if (isUfret) {
+    sweepAds();
+    new MutationObserver(() => { clearTimeout(sweepAds.t); sweepAds.t = setTimeout(sweepAds, 300); })
+      .observe(document.documentElement, { childList: true, subtree: true });
+  }
   // U-FRET：楽器（ギター／ウクレレ／ピアノ／ベース）の切り替え。ページ内の切り替えリンクを押す
   function setInstrument(name) {
     if (!isUfret || !/^(Guitar|Ukulele|Piano|Bass)$/.test(name)) return;
@@ -60,6 +100,8 @@
     }
     return false;
   }
+  // 動き出したことを知らせる（プレーヤー側で「拡張機能が動いているか」を表示するため）
+  parent.postMessage({ type: "anisong-ext-hello", version: (self.chrome && chrome.runtime && chrome.runtime.getManifest) ? chrome.runtime.getManifest().version : "?", href: location.href }, parentOrigin);
   if (document.readyState === "complete") { if (!checkNoChord()) send(); }
   else addEventListener("load", () => { if (!checkNoChord()) send(); });
   let n = 0; const timer = setInterval(() => { send(); if (++n > 30) clearInterval(timer); }, 1000);
