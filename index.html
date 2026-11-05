@@ -60,7 +60,7 @@ header,main,footer{position:relative;z-index:1}
 body.lyr-open{padding-right:calc(var(--lyr-w) + 24px)}
 .lyr-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
 .lyr-src{display:flex;gap:4px;flex:1 1 auto;min-width:0;overflow-x:auto}
-.lyr-src button{font:inherit;font-size:13px;font-weight:700;padding:4px 10px;border-radius:7px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;white-space:nowrap}
+.lyr-src button{font:inherit;font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:7px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;white-space:nowrap}
 .lyr-src button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .lyr-ext{font-size:12.5px;color:var(--muted);white-space:nowrap}
 .lyr-x{font:inherit;font-size:20px;line-height:1;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:var(--ink);cursor:pointer}
@@ -80,6 +80,9 @@ body.lyr-open{padding-right:calc(var(--lyr-w) + 24px)}
 .lyr-sheet iframe{display:block;width:480px;height:15000px;border:0;transform-origin:0 0}
 .lyr-sheet iframe[data-src="utanet"]{height:6000px}   /* サイトごとのページの長さに合わせる */
 .lyr-sheet iframe[data-src="utachord"]{height:11000px}
+.lyr-sheet iframe[data-src="ufret"]{height:17000px}
+#instBox{display:inline-flex;gap:5px;align-items:center} #instBox[hidden]{display:none}
+#lyrInst{font:inherit;font-size:12.5px;padding:2px 6px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
 .filemode .lyr-cal{display:none}
 @media (max-width:900px){
   :root{--lyr-w:auto}
@@ -150,6 +153,9 @@ li.now .jk .eq{display:grid}
 .tag{font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:4px;border:1px solid currentColor}
 .tag.off{color:var(--official)} .tag.ref{color:var(--ref)} .tag.yr{color:var(--muted);font-family:var(--f-mono);font-weight:500;letter-spacing:0}
 .tag.skip{color:var(--warn)}
+button.tag{font:inherit;font-size:11px;font-weight:700;background:none;cursor:pointer;line-height:inherit}
+.tag.t-lyr{color:var(--accent)} .tag.t-chd{color:var(--official)}
+button.tag:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
 /* 作品内での使われ方（作品名の右） */
 .role{display:inline-block;margin-left:8px;padding:0 7px;border-radius:999px;font-size:11px;font-weight:700;line-height:18px;vertical-align:1px;color:var(--panel);background:var(--muted);white-space:nowrap}
 .role.op{background:var(--accent);color:var(--accent-ink)}
@@ -267,13 +273,14 @@ footer a{color:inherit}
       <button role="tab" data-src="utanet">歌ネット</button>
       <button role="tab" data-src="utachord">歌ネット コード</button>
       <button role="tab" data-src="chordwiki">ChordWiki</button>
+      <button role="tab" data-src="ufret">U-FRET</button>
     </div>
-    <a class="lyr-ext" id="lyrUfret" href="#" target="_blank" rel="noopener" title="U-FRETを新しいタブで開く（広告があるため埋め込みません）">U-FRET↗</a>
     <a class="lyr-ext" id="lyrOpen" href="#" target="_blank" rel="noopener" title="表示中のページを新しいタブで開く">別タブ</a>
     <button class="lyr-x" id="lyrClose" aria-label="歌詞・コードを閉じる">×</button>
   </div>
   <div class="lyr-cal" id="lyrCal">
     <label><input type="checkbox" id="lyrAuto" checked>自動スクロール</label>
+    <label id="instBox" hidden>楽器 <select id="lyrInst"><option value="Guitar">ギター</option><option value="Ukulele">ウクレレ</option><option value="Piano">ピアノ</option><option value="Bass">ベース</option></select></label>
     <button class="pill" id="calSync" title="今歌っている行がパネルの中央に来るようにスクロールしてから押すと、この曲のスクロールの速さを合わせます">今ここを歌っている</button>
     <button class="pill" id="calReset">リセット</button>
     <span class="lyr-info" id="calInfo"></span>
@@ -285,7 +292,7 @@ footer a{color:inherit}
 <footer class="wrap">
   <section class="help" id="ext-help">
     <h3>歌詞の自動スクロールを正確にする拡張機能（Chrome）</h3>
-    <p>「歌詞・コード」パネルの自動スクロールは、そのままでもおおよその位置で動きます。Chrome に専用の拡張機能を入れると、パネル内の歌ネット・ChordWiki のページから歌詞部分の位置を受け取り、動画の最初から最後にかけて歌詞がぴったり流れるようになります。また、歌ネットにコードのページが無い曲では、自動で歌詞のページに切り替わります。</p>
+    <p>「歌詞・コード」パネルの自動スクロールは、そのままでもおおよその位置で動きます。Chrome に専用の拡張機能を入れると、パネル内の歌ネット・ChordWiki のページから歌詞部分の位置を受け取り、動画の最初から最後にかけて歌詞がぴったり流れるようになります。また、歌ネットにコードのページが無い曲では自動で歌詞のページに切り替わり、U-FRET では外部の広告枠を非表示にして、ギター／ウクレレ／ピアノ／ベースの表示を選べるようになります。</p>
     <ol>
       <li><a href="anisong-lyrics-extension.zip" download>拡張機能（zip）をダウンロード</a>して、好きな場所に展開します。ローカル版を使っている場合は、フォルダ内の <code>chrome_extension</code> をそのまま使えます。</li>
       <li>Chrome のアドレスバーに <code>chrome://extensions</code> と入力して開きます。</li>
@@ -293,7 +300,7 @@ footer a{color:inherit}
       <li>「パッケージ化されていない拡張機能を読み込む」を押し、展開したフォルダ（<code>manifest.json</code> が入っているフォルダ）を選びます。</li>
       <li>このページを再読み込みします。パネルの説明が「歌詞の枠の位置を取得しました」になれば連携できています。</li>
     </ol>
-    <p class="small">拡張機能は、このプレーヤーのパネル内で開いた歌ネット・ChordWiki のページでだけ動き、歌詞部分の位置（数値）とコード譜の有無だけをプレーヤーに知らせます。歌詞などの内容は送らず、特別な権限も使いません。更新したときは <code>chrome://extensions</code> で拡張機能の「再読み込み」ボタンを押してください。</p>
+    <p class="small">U-FRET は広告収入で無料提供されているサイトです。広告なしで使える有料プラン（U-FRETプレミアム）もあります。拡張機能は、このプレーヤーのパネル内で開いた歌ネット・ChordWiki・U-FRET のページでだけ動き、歌詞部分の位置（数値）とコード譜の有無だけをプレーヤーに知らせます。歌詞などの内容は送らず、特別な権限も使いません。更新したときは <code>chrome://extensions</code> で拡張機能の「再読み込み」ボタンを押してください。</p>
   </section>
   <h3>このランキングについて</h3>
   <ul>
@@ -369,6 +376,10 @@ function row(e,i){
   else if(e.kind==="ref") tags=`<span class="tag ref">参考</span>`;
   else tags=e.years.map(y=>`<span class="tag yr" title="${y.k==="official"?"公式":"参考"}順位">${y.y}:${y.r}位${y.k==="official"?"":"*"}</span>`).join("")+`<span class="tag yr">${e.score}pt</span>`;
   const v=vidOf(e), sk=v&&skipped.has(v);
+  // 歌詞・コードのページがある曲のチップ（押すとそのページを歌詞パネルで開いて再生）
+  if(UTANET[e.title]) tags+=`<button class="tag t-lyr" data-lyr="utanet" data-i="${i}" title="歌ネットに歌詞ページがあります（押すと歌詞パネルで表示）">歌詞</button>`;
+  const cs=[CWIKI[e.title]&&"ChordWiki",UFRET[e.title]&&"U-FRET"].filter(Boolean);
+  if(cs.length) tags+=`<button class="tag t-chd" data-lyr="${CWIKI[e.title]?"chordwiki":"ufret"}" data-i="${i}" title="コード譜：${cs.join("・")}（押すと歌詞パネルで表示）">コード</button>`;
   if(!v) tags+=`<span class="tag skip">動画未登録</span>`;
   if(sk) tags+=`<span class="tag skip">埋め込み不可</span>`;
   const cls=[e.rank<=3?"top":"",inQueue(e)?"":"dim",v&&!sk?"can":""].join(" ");
@@ -523,7 +534,8 @@ if(!FILE_MODE) setInterval(seekUI,500);
 // 別サイトの中身はスクロールできないため、iframe を縦に長くして外側の枠をスクロールする。
 // iframe の表示幅は BASE_W に固定し、パネル幅に合わせて zoom する（位置の目安をどの幅でも使えるように）。
 var L={src:lsGet("lyrSrc","utanet"),open:false,song:null,url:"",userUntil:0,lastSet:-1,zoom:1,box:null};
-if(!["utanet","utachord","chordwiki"].includes(L.src)) L.src="utanet";
+if(!["utanet","utachord","chordwiki","ufret"].includes(L.src)) L.src="utanet";
+L.inst=lsGet("lyrInst","Guitar"); L.instSent="";
 // 歌ネットにコード譜が無かった曲（拡張機能が知らせる）。この曲は「歌ネット コード」タブでも歌詞ページを表示する
 const noChord=new Set(lsGet("noChord",[]));
 // 実際に表示しているページの種類（コード譜が無い曲では utachord → utanet）
@@ -536,14 +548,15 @@ const LYR_URL={
   utanet:e=>UTANET[e.title]?`https://www.uta-net.com/song/${UTANET[e.title]}/`:utaSearch(e),
   utachord:e=>UTANET[e.title]?`https://www.uta-net.com/chord/${UTANET[e.title]}/`:utaSearch(e),
   // 曲ページが見つからない曲は、同名の別曲を開かないよう歌手のタグ一覧を開く
+  ufret:e=>ufretUrl(e),
   chordwiki:e=>CWIKI[e.title]||`https://ja.chordwiki.org/tag/${enc(e.artist.split(/\s*(?:×|,|、| feat)/)[0].trim())}`,
 };
 const ufretUrl=e=>UFRET[e.title]?`https://www.ufret.jp/song.php?data=${UFRET[e.title]}`:`https://www.ufret.jp/search.php?key=${enc(coreTitle(e.title)+" "+e.artist.split(/ feat/)[0])}`;
-const LYR_NAME={utanet:"歌ネット",utachord:"歌ネット（コード）",chordwiki:"ChordWiki"};
+const LYR_NAME={utanet:"歌ネット",utachord:"歌ネット（コード）",chordwiki:"ChordWiki",ufret:"U-FRET"};
 // 曲ページでの歌詞部分の目安（表示幅480pxで実測）。s=最初の歌詞行の位置、k=曲1秒あたりの歌詞の長さ(px)
 // 歌ネット9曲・コード4曲・ChordWiki3曲の実測の中央値。曲ごとの差は「今ここを歌っている」で補正する。
-const GEOM={utanet:{s:584,k:5.8},utachord:{s:556,k:25.5},chordwiki:{s:508,k:18}};
-const isSongPage=src=>!!(L.song&&(src==="chordwiki"?CWIKI[L.song.title]:UTANET[L.song.title]));
+const GEOM={utanet:{s:584,k:5.8},utachord:{s:556,k:25.5},chordwiki:{s:508,k:18},ufret:{s:3314,k:40}};
+const isSongPage=src=>!!(L.song&&(src==="chordwiki"?CWIKI[L.song.title]:src==="ufret"?UFRET[L.song.title]:UTANET[L.song.title]));
 // 位置合わせは「歌っている行」の位置（表示幅480px基準）で保存。以前の形式(cal:)とは互換性がないので別のキーにする
 const calKey=()=>L.song&&`cal2:${effSrc()}:${L.song.title}`;
 const calGet=()=>L.song?lsGet(calKey(),null):null;
@@ -572,8 +585,9 @@ function lyrUpdate(){
   if(!L.open) return;
   L.song=lyrSong();
   const url=LYR_URL[effSrc()](L.song);
-  $("lyrOpen").href=url; $("lyrUfret").href=ufretUrl(L.song);
-  if(url!==L.url){L.url=url;L.box=null;$("lyrFrame").dataset.src=effSrc();$("lyrFrame").src=url;lyrZoom();setSheet(0)}
+  $("lyrOpen").href=url;
+  $("instBox").hidden=effSrc()!=="ufret"; $("lyrInst").value=L.inst;
+  if(url!==L.url){L.url=url;L.box=null;L.instSent="";$("lyrFrame").dataset.src=effSrc();$("lyrFrame").src=url;lyrZoom();setSheet(0)}
   calInfo();
 }
 function calInfo(){
@@ -584,7 +598,8 @@ function calInfo(){
   else if(L.box&&!(c&&(c.e!=null||c.s!=null))) msg=`歌詞の枠の位置を取得しました。動画の最初から最後にかけて、歌詞の枠全体が流れるように自動でスクロールします。${how}`;
   else if(c&&(c.e!=null||c.s!=null)) msg=`この曲は補正済みです（${[c.s!=null?fmt(c.ts):"",c.e!=null?fmt(c.te):""].filter(Boolean).join("・")}で記録）。さらにずれるときは、もう一度押してください。`;
   else if(L.src==="utachord"&&!L.box) msg=`おおよその位置で自動スクロールします。${how}歌ネットにコード譜が無い曲は、ページが表示されないことがあります（拡張機能を入れていると、自動で歌詞のみのページに切り替えます）。`;
-  else msg=`おおよその位置で自動スクロールします（同じフォルダの拡張機能を入れると、歌詞の枠に正確に合わせられます）。${how}`;
+  else if(effSrc()==="ufret") msg=`おおよその位置で自動スクロールします。U-FRET の広告の非表示と楽器の切り替えには、拡張機能が必要です。${how}`;
+  else msg=`おおよその位置で自動スクロールします（拡張機能を入れると、歌詞の枠に正確に合わせられます）。${how}`;
   // コード譜が無いので歌詞ページに切り替えているときは、その旨を先頭に付ける
   if(L.src==="utachord"&&effSrc()==="utanet") msg=`この曲は歌ネットにコードのページが無いので、歌詞のみのページを表示中です。 `+msg;
   $("calInfo").textContent=msg;
@@ -613,12 +628,21 @@ $("calSync").addEventListener("click",()=>{
 });
 $("calReset").addEventListener("click",()=>{try{localStorage.removeItem(calKey())}catch{};calInfo()});
 // 拡張機能（chrome_extension/）から、パネル内のページの歌詞枠の位置（表示幅480px基準）を受け取る
-const LYR_ORIGINS=["https://www.uta-net.com","https://ja.chordwiki.org"];
+const LYR_ORIGINS=["https://www.uta-net.com","https://ja.chordwiki.org","https://www.ufret.jp"];
+// U-FRET の楽器表示（拡張機能がページ内の切り替えリンクを押す）
+function sendInst(){
+  if(effSrc()!=="ufret") return;
+  try{$("lyrFrame").contentWindow.postMessage({type:"anisong-instrument",name:L.inst},"https://www.ufret.jp")}catch{}
+  L.instSent=L.url;
+}
+$("lyrInst").addEventListener("change",ev=>{L.inst=ev.target.value;lsSet("lyrInst",L.inst);sendInst()});
 addEventListener("message",ev=>{
   const m=ev.data;
   if(!m||m.type!=="anisong-lyrics-box"||!LYR_ORIGINS.includes(ev.origin)||ev.source!==$("lyrFrame").contentWindow) return;
   if(!(m.bottom>m.top)) return;
-  L.box={top:m.top,bottom:m.bottom,href:m.href}; lsSet("extSeen",true); calInfo();
+  L.box={top:m.top,bottom:m.bottom,href:m.href}; lsSet("extSeen",true);
+  if(ev.origin==="https://www.ufret.jp"&&L.instSent!==L.url&&L.inst!=="Guitar") sendInst();   // 最初の連絡が来たら楽器を合わせる
+  calInfo();
 });
 addEventListener("message",ev=>{
   const m=ev.data;
@@ -692,6 +716,8 @@ tabs.addEventListener("click",ev=>{const b=ev.target.closest(".tab");if(b){view=
 $("q").addEventListener("input",render);
 // 画像・「ここから再生」に加え、行の背景をクリックしてもその曲から再生する（リンクは除く）
 $("list").addEventListener("click",ev=>{
+  const lc=ev.target.closest("[data-lyr]");
+  if(lc){L.src=lc.dataset.lyr;lsSet("lyrSrc",L.src);if(!L.open)lyrOpen(true);startTab(view,+lc.dataset.i);return}
   const b=ev.target.closest("[data-play]");
   if(b){if(!b.disabled)startTab(view,+b.dataset.play);return}
   if(ev.target.closest("a,button,input")) return;
@@ -734,6 +760,16 @@ if(location.hostname==="localhost"){
   ping(); setInterval(ping,15000);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)ping()});
   addEventListener("pagehide",()=>{try{navigator.sendBeacon("/__bye")}catch{}});
+  // 専用画面の位置・大きさを覚えて、次回もその状態で開く（タブで開いているときは何もしない）
+  const isApp=()=>matchMedia("(display-mode: standalone)").matches||(window.toolbar&&!window.toolbar.visible);
+  if(isApp()){
+    const cur=()=>({x:screenX,y:screenY,w:outerWidth,h:outerHeight,max:outerWidth>=screen.availWidth-2&&outerHeight>=screen.availHeight-2});
+    let lastWin="";
+    const saveWin=()=>{const w=cur(),k=JSON.stringify(w);if(k===lastWin||w.w<400||w.h<300)return;lastWin=k;
+      try{navigator.sendBeacon("/__win",new Blob([k],{type:"application/json"}))}catch{}};
+    // 前回の位置への移動は起動側（serve_player.py）が行う。移動が終わるのを待ってから記録を始める
+    setTimeout(()=>{lastWin=JSON.stringify(cur());setInterval(saveWin,2000);addEventListener("resize",saveWin)},6000);
+  }
 }
 if(!FILE_MODE){const s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.head.appendChild(s);}
 </script>

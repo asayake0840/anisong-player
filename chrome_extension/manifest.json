@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "アニソンプレーヤー 歌詞位置連携",
-  "version": "1.1.0",
-  "description": "アニソンランキング100プレーヤーの歌詞パネル内で開いた歌ネット・ChordWikiのページから、歌詞部分の位置（数値のみ）をプレーヤーに知らせます。",
+  "version": "1.2.0",
+  "description": "アニソンランキング100プレーヤーの歌詞パネル内で開いた歌ネット・ChordWiki・U-FRETのページから、歌詞部分の位置（数値のみ）をプレーヤーに知らせます。U-FRETでは広告枠を非表示にし、楽器表示を切り替えます。",
   "content_scripts": [
     {
       "matches": [
         "https://www.uta-net.com/song/*",
         "https://www.uta-net.com/chord/*",
-        "https://ja.chordwiki.org/wiki/*"
+        "https://ja.chordwiki.org/wiki/*",
+        "https://www.ufret.jp/song.php*"
       ],
       "js": ["content.js"],
       "all_frames": true,
