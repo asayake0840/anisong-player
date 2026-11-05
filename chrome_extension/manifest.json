@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "アニソンプレーヤー 歌詞位置連携",
+  "version": "1.1.0",
+  "description": "アニソンランキング100プレーヤーの歌詞パネル内で開いた歌ネット・ChordWikiのページから、歌詞部分の位置（数値のみ）をプレーヤーに知らせます。",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.uta-net.com/song/*",
+        "https://www.uta-net.com/chord/*",
+        "https://ja.chordwiki.org/wiki/*"
+      ],
+      "js": ["content.js"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ]
+}
